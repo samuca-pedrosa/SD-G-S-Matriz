@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD Gás - Sistema Completo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1e40af',
+                        success: '#16a34a',
+                        danger: '#dc2626',
+                        warning: '#d97706'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="app" class="min-h-screen">
+        <!-- Cabeçalho -->
+        <header class="bg-gradient-to-r from-primary to-secondary text-white p-4 shadow-lg">
+            <div class="container mx-auto flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold">SD GÁS - Sistema Completo</h1>
+                    <p class="text-blue-100 text-sm">Gestão de Vendas, Rotas e Vendedores</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                        ✔️ Sistema Ativo
+                    </div>
+                    <div class="text-blue-100 text-xs mt-1">
+                        📅 <span id="current-date"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navegação -->
+        <nav class="bg-white shadow-md">
+            <div class="container mx-auto flex overflow-x-auto">
+                <button onclick="setCurrentTab('vendas')" id="tab-vendas" class="px-4 py-3 font-medium flex items-center whitespace-nowrap bg-primary text-white">
+                    <i class="fas fa-shopping-cart mr-2"></i> Vendas
+                </button>
+                <button onclick="setCurrentTab('rotas')" id="tab-rotas" class="px-4 py-3 font-medium flex items-center whitespace-nowrap">
+                    <i class="fas fa-route mr-2"></i> Rotas
+                </button>
+                <button onclick="setCurrentTab('vendedores')" id="tab-vendedores" class="px-4 py-3 font-medium flex items-center whitespace-nowrap">
+                    <i class="fas fa-users mr-2"></i> Vendedores
+                </button>
+                <button onclick="setCurrentTab('relatorios')" id="tab-relatorios" class="px-4 py-3 font-medium flex items-center whitespace-nowrap">
+                    <i class="fas fa-chart-bar mr-2"></i> Relatórios
+                </button>
+            </div>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="container mx-auto p-4">
+            <!-- Aba de Vendas -->
+            <div id="content-vendas" class="bg-white rounded-lg shadow p-6 fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-shopping-cart mr-2 text-primary"></i>Controle de Vendas
+                    </h2>
+                    <button onclick="abrirFormVenda()" class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Nova Venda
+                    </button>
+                </div>
+
+                <!-- Filtros -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <h3 class="font-semibold mb-3 text-gray-700">
+                        <i class="fas fa-filter mr-2"></i>Filtrar Vendas
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Data Início</label>
+                            <input id="filter-data-inicio" type="date" class="w-full p-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Data Fim</label>
+                            <input id="filter-data-fim" type="date" class="w-full p-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Rota</label>
+                            <select id="filter-rota" class="w-full p-2 border rounded-lg">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Vendedor</label>
+                            <select id="filter-vendedor" class="w-full p-2 border rounded-lg">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Vendas -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rota</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendedor</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vendas-tbody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba de Rotas -->
+            <div id="content-rotas" class="bg-white rounded-lg shadow p-6 fade-in hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-route mr-2 text-primary"></i>Gerenciamento de Rotas
+                    </h2>
+                    <div>
+                        <button onclick="openRotaForm()" class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Nova Rota
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista de Rotas -->
+                <div id="rotas-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                </div>
+            </div>
+
+            <!-- Aba de Vendedores -->
+            <div id="content-vendedores" class="bg-white rounded-lg shadow p-6 fade-in hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-users mr-2 text-primary"></i>Gerenciamento de Vendedores
+                    </h2>
+                    <button onclick="abrirFormVendedor()" class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Novo Vendedor
+                    </button>
+                </div>
+
+                <!-- Lista de Vendedores -->
+                <div id="vendedores-container" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                </div>
+            </div>
+
+            <!-- Aba de Relatórios -->
+            <div id="content-relatorios" class="bg-white rounded-lg shadow p-6 fade-in hidden">
+                <h2 class="text-xl font-bold text-gray-800 mb-6">
+                    <i class="fas fa-chart-bar mr-2 text-primary"></i>Relatórios e Estatísticas
+                </h2>
+                
+                <!-- Filtros de Relatório -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <h3 class="font-semibold mb-3 text-gray-700">
+                        <i class="fas fa-filter mr-2"></i>Configurar Relatório
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Período</label>
+                            <select id="report-periodo" class="w-full p-2 border rounded-lg">
+                                <option value="diario">Diário</option>
+                                <option value="semanal">Semanal</option>
+                                <option value="mensal">Mensal</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Data</label>
+                            <input id="report-data" type="date" class="w-full p-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Rota</label>
+                            <select id="report-rota" class="w-full p-2 border rounded-lg">
+                                <option value="">Todas as Rotas</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-4">
+                        <button onclick="gerarRelatorio()" class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded flex items-center">
+                            <i class="fas fa-chart-pie mr-2"></i> Gerar Relatório
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resultados do Relatório -->
+                <div id="relatorio-resultado" class="border rounded-lg p-4 fade-in hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-lg">Resultado do Relatório</h3>
+                        <div class="flex gap-2">
+                            <button onclick="imprimirRelatorio()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm flex items-center">
+                                <i class="fas fa-print mr-2"></i> Imprimir
+                            </button>
+                            <button onclick="exportarCSV()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm flex items-center">
+                                <i class="fas fa-file-csv mr-2"></i> CSV
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <div id="rel-total-vendas" class="text-2xl font-bold text-blue-600">0</div>
+                            <div class="text-sm text-blue-800">Total de Vendas</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <div id="rel-total-faturamento" class="text-2xl font-bold text-green-600">R$ 0,00</div>
+                            <div class="text-sm text-green-800">Faturamento Total</div>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <div id="rel-vendedores-ativos" class="text-2xl font-bold text-purple-600">0</div>
+                            <div class="text-sm text-purple-800">Vendedores Ativos</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Vendas do Relatório -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rota</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="relatorio-tbody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modal de Venda -->
+        <div id="venda-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+            <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-4">Nova Venda</h2>
+
+                <form id="venda-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Cliente *</label>
+                            <input id="venda-cliente" required class="w-full p-2 border rounded-lg" placeholder="Nome do cliente">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Rota *</label>
+                            <select id="venda-rota" required class="w-full p-2 border rounded-lg">
+                                <option value="">Selecione a rota</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Vendedor *</label>
+                            <select id="venda-vendedor" required class="w-full p-2 border rounded-lg">
+                                <option value="">Selecione o vendedor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Data *</label>
+                            <input id="venda-data" type="date" required class="w-full p-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Quantidade de Gás</label>
+                            <input id="venda-qtd-gas" type="number" min="0" class="w-full p-2 border rounded-lg" oninput="calcularTotal()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Preço do Gás (R$)</label>
+                            <input id="venda-preco-gas" type="number" step="0.01" min="0" class="w-full p-2 border rounded-lg" oninput="calcularTotal()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Quantidade de Água</label>
+                            <input id="venda-qtd-agua" type="number" min="0" class="w-full p-2 border rounded-lg" oninput="calcularTotal()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Preço da Água (R$)</label>
+                            <input id="venda-preco-agua" type="number" step="0.01" min="0" class="w-full p-2 border rounded-lg" oninput="calcularTotal()">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Observações</label>
+                        <textarea id="venda-observacoes" class="w-full p-2 border rounded-lg" rows="3" placeholder="Informações adicionais..."></textarea>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-lg font-semibold">
+                            Total: R$ <span id="venda-total">0,00</span>
+                        </p>
+                    </div>
+
+                    <div class="flex gap-3 justify-end">
+                        <button type="button" onclick="fecharModalVenda()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded hover:bg-secondary">
+                            Salvar Venda
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Rota -->
+        <div id="rota-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                <h2 class="text-xl font-bold mb-4">Nova Rota</h2>
+
+                <form id="rota-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nome da Rota *</label>
+                        <input id="rota-nome" required class="w-full p-2 border rounded-lg" placeholder="Ex: Rota Extremoz">
+                    </div>
+
+                    <div class="flex gap-3 justify-end">
+                        <button type="button" onclick="fecharModalRota()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded hover:bg-secondary">
+                            Adicionar Rota
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Vendedor -->
+        <div id="vendedor-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                <h2 class="text-xl font-bold mb-4">Novo Vendedor</h2>
+
+                <form id="vendedor-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nome do Vendedor *</label>
+                        <input id="vendedor-nome" required class="w-full p-2 border rounded-lg" placeholder="Nome completo">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Telefone</label>
+                        <input id="vendedor-telefone" class="w-full p-2 border rounded-lg" placeholder="(84) 99999-9999">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Rota</label>
+                        <select id="vendedor-rota" class="w-full p-2 border rounded-lg">
+                            <option value="">Sem rota definida</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-3 justify-end">
+                        <button type="button" onclick="fecharModalVendedor()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded hover:bg-secondary">
+                            Adicionar Vendedor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados iniciais
+        let vendas = [];
+        let rotas = ['Rota Extremoz', 'Disk Extremoz', 'Rota Pureza', 'Rota São Gonçalo'];
+        let vendedores = [
+            { id: 1, nome: 'TARCÍSIO', telefone: '', rota: 'Rota Extremoz' },
+            { id: 2, nome: 'PEDRO', telefone: '', rota: 'Disk Extremoz' },
+            { id: 3, nome: 'RAMACEL', telefone: '', rota: 'Rota Pureza' }
+        ];
+
+        let currentTab = 'vendas';
+
+        // Funções utilitárias
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function getRotaClass(rota) {
+            const cores = {
+                'Rota Extremoz': 'bg-blue-100 text-blue-800',
+                'Disk Extremoz': 'bg-green-100 text-green-800',
+                'Rota Pureza': 'bg-purple-100 text-purple-800',
+                'Rota São Gonçalo': 'bg-orange-100 text-orange-800'
+            };
+            return cores[rota] || 'bg-gray-100 text-gray-800';
+        }
+
+        // Funções de navegação
+        function setCurrentTab(tab) {
+            currentTab = tab;
+            
+            // Ocultar todas as abas
+            document.querySelectorAll('[id^="content-"]').forEach(el => el.classList.add('hidden'));
+            
+            // Mostrar aba atual
+            document.getElementById('content-' + tab).classList.remove('hidden');
+            
+            // Atualizar botões de navegação
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.className = 'px-4 py-3 font-medium flex items-center whitespace-nowrap';
+            });
+            document.getElementById('tab-' + tab).className = 'px-4 py-3 font-medium flex items-center whitespace-nowrap bg-primary text-white';
+            
+            // Atualizar conteúdo
+            if (tab === 'vendas') atualizarVendas();
+            if (tab === 'rotas') atualizarRotas();
+            if (tab === 'vendedores') atualizarVendedores();
+            if (tab === 'relatorios') atualizarRelatorios();
+        }
+
+        // Funções de venda
+        function atualizarVendas() {
+            const tbody = document.getElementById('vendas-tbody');
+            tbody.innerHTML = '';
+            
+            if (vendas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500"><i class="fas fa-inbox text-2xl mb-2"></i><br>Nenhuma venda encontrada</td></tr>';
+                return;
+            }
+            
+            vendas.forEach(venda => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">${formatDate(venda.data)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap font-medium">${venda.cliente}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 rounded-full text-xs ${getRotaClass(venda.rota)}">
+                                ${venda.rota}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">${venda.vendedor}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right font-medium text-green-600">R$ ${venda.total.toFixed(2)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <button onclick="excluirVenda(${venda.id}, '${venda.cliente}')" class="text-red-600 hover:text-red-800" title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            // Atualizar filtros
+            atualizarFiltros();
+        }
+
+        function atualizarFiltros() {
+            const rotaFilter = document.getElementById('filter-rota');
+            const vendedorFilter = document.getElementById('filter-vendedor');
+            
+            rotaFilter.innerHTML = '<option value="">Todas</option>';
+            rotas.forEach(rota => {
+                rotaFilter.innerHTML += `<option value="${rota}">${rota}</option>`;
+            });
+            
+            vendedorFilter.innerHTML = '<option value="">Todos</option>';
+            vendedores.forEach(vendedor => {
+                vendedorFilter.innerHTML += `<option value="${vendedor.nome}">${vendedor.nome}</option>`;
+            });
+        }
+
+        function abrirFormVenda() {
+            // Limpar formulário
+            document.getElementById('venda-form').reset();
+            document.getElementById('venda-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('venda-total').textContent = '0,00';
+            
+            // Preencher selects
+            const rotaSelect = document.getElementById('venda-rota');
+            const vendedorSelect = document.getElementById('venda-vendedor');
+            
+            rotaSelect.innerHTML = '<option value="">Selecione a rota</option>';
+            rotas.forEach(rota => {
+                rotaSelect.innerHTML += `<option value="${rota}">${rota}</option>`;
+            });
+            
+            vendedorSelect.innerHTML = '<option value="">Selecione o vendedor</option>';
+            vendedores.forEach(vendedor => {
+                vendedorSelect.innerHTML += `<option value="${vendedor.nome}">${vendedor.nome}</option>`;
+            });
+            
+            document.getElementById('venda-modal').classList.remove('hidden');
+            document.getElementById('venda-modal').classList.add('flex');
+        }
+
+        function fecharModalVenda() {
+            document.getElementById('venda-modal').classList.add('hidden');
+            document.getElementById('venda-modal').classList.remove('flex');
+        }
+
+        function calcularTotal() {
+            const qtdGas = parseFloat(document.getElementById('venda-qtd-gas').value) || 0;
+            const precoGas = parseFloat(document.getElementById('venda-preco-gas').value) || 0;
+            const qtdAgua = parseFloat(document.getElementById('venda-qtd-agua').value) || 0;
+            const precoAgua = parseFloat(document.getElementById('venda-preco-agua').value) || 0;
+            
+            const total = (qtdGas * precoGas) + (qtdAgua * precoAgua);
+            document.getElementById('venda-total').textContent = total.toFixed(2);
+        }
+
+        function excluirVenda(id, cliente) {
+            if (confirm(`Tem certeza que deseja excluir a venda de ${cliente}?`)) {
+                vendas = vendas.filter(v => v.id !== id);
+                atualizarVendas();
+            }
+        }
+
+        // Funções de rota
+        function atualizarRotas() {
+            const container = document.getElementById('rotas-container');
+            container.innerHTML = '';
+            
+            if (rotas.length === 0) {
+                container.innerHTML = '<div class="col-span-3 text-center py-8 text-gray-500"><i class="fas fa-route text-4xl mb-3"></i><p>Nenhuma rota cadastrada</p></div>';
+                return;
+            }
+            
+            rotas.forEach((rota, index) => {
+                container.innerHTML += `
+                    <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-semibold text-lg">${rota}</h3>
+                            <button onclick="excluirRota(${index}, '${rota}')" class="text-red-500 hover:text-red-700" title="Excluir">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 text-sm text-gray-600">
+                            <p><i class="fas fa-map-marker-alt mr-2"></i>Área de atuação</p>
+                        </div>
+                        <div class="mt-4">
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-medium ${getRotaClass(rota)}">
+                                ${rota}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openRotaForm() {
+            document.getElementById('rota-form').reset();
+            document.getElementById('rota-modal').classList.remove('hidden');
+            document.getElementById('rota-modal').classList.add('flex');
+        }
+
+        function fecharModalRota() {
+            document.getElementById('rota-modal').classList.add('hidden');
+            document.getElementById('rota-modal').classList.remove('flex');
+        }
+
+        function excluirRota(index, rota) {
+            if (confirm(`Tem certeza que deseja excluir a rota "${rota}"?`)) {
+                rotas.splice(index, 1);
+                atualizarRotas();
+                atualizarFiltros();
+            }
+        }
+
+        // Funções de vendedor
+        function atualizarVendedores() {
+            const container = document.getElementById('vendedores-container');
+            container.innerHTML = '';
+            
+            if (vendedores.length === 0) {
+                container.innerHTML = '<div class="col-span-4 text-center py-8 text-gray-500"><i class="fas fa-users text-4xl mb-3"></i><p>Nenhum vendedor cadastrado</p></div>';
+                return;
+            }
+            
+            vendedores.forEach(vendedor => {
+                container.innerHTML += `
+                    <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-semibold text-lg">${vendedor.nome}</h3>
+                            <div class="flex gap-2">
+                                <button onclick="excluirVendedor(${vendedor.id}, '${vendedor.nome}')" class="text-red-500 hover:text-red-700" title="Excluir">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">
+                            <i class="fas fa-phone mr-2"></i>${vendedor.telefone || 'Não informado'}
+                        </p>
+                        <div>
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <i class="fas fa-route mr-1"></i> ${vendedor.rota || 'Sem rota definida'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function abrirFormVendedor() {
+            document.getElementById('vendedor-form').reset();
+            
+            const rotaSelect = document.getElementById('vendedor-rota');
+            rotaSelect.innerHTML = '<option value="">Sem rota definida</option>';
+            rotas.forEach(rota => {
+                rotaSelect.innerHTML += `<option value="${rota}">${rota}</option>`;
+            });
+            
+            document.getElementById('vendedor-modal').classList.remove('hidden');
+            document.getElementById('vendedor-modal').classList.add('flex');
+        }
+
+        function fecharModalVendedor() {
+            document.getElementById('vendedor-modal').classList.add('hidden');
+            document.getElementById('vendedor-modal').classList.remove('flex');
+        }
+
+        function excluirVendedor(id, nome) {
+            if (confirm(`Tem certeza que deseja excluir o vendedor "${nome}"?`)) {
+                vendedores = vendedores.filter(v => v.id !== id);
+                atualizarVendedores();
+                atualizarFiltros();
+            }
+        }
+
+        // Funções de relatório
+        function atualizarRelatorios() {
+            const rotaSelect = document.getElementById('report-rota');
+            rotaSelect.innerHTML = '<option value="">Todas as Rotas</option>';
+            rotas.forEach(rota => {
+                rotaSelect.innerHTML += `<option value="${rota}">${rota}</option>`;
+            });
+            
+            document.getElementById('report-data').value = new Date().toISOString().split('T')[0];
+        }
+
+        function gerarRelatorio() {
+            const periodo = document.getElementById('report-periodo').value;
+            const data = new Date(document.getElementById('report-data').value);
+            const rotaFiltro = document.getElementById('report-rota').value;
+            
+            let vendasFiltradas = vendas.filter(venda => {
+                const dataVenda = new Date(venda.data);
+                
+                if (rotaFiltro && venda.rota !== rotaFiltro) {
+                    return false;
+                }
+                
+                if (periodo === 'diario') {
+                    return dataVenda.toDateString() === data.toDateString();
+                } else if (periodo === 'semanal') {
+                    const inicioSemana = new Date(data);
+                    inicioSemana.setDate(data.getDate() - data.getDay());
+                    const fimSemana = new Date(inicioSemana);
+                    fimSemana.setDate(inicioSemana.getDate() + 6);
+                    return dataVenda >= inicioSemana && dataVenda <= fimSemana;
+                } else if (periodo === 'mensal') {
+                    return dataVenda.getMonth() === data.getMonth() && 
+                           dataVenda.getFullYear() === data.getFullYear();
+                }
+                
+                return true;
+            });
+
+            const totalVendas = vendasFiltradas.length;
+            const totalFaturamento = vendasFiltradas.reduce((acc, v) => acc + v.total, 0);
+            const vendedoresAtivos = new Set(vendasFiltradas.map(v => v.vendedor)).size;
+
+            document.getElementById('rel-total-vendas').textContent = totalVendas;
+            document.getElementById('rel-total-faturamento').textContent = `R$ ${totalFaturamento.toFixed(2)}`;
+            document.getElementById('rel-vendedores-ativos').textContent = vendedoresAtivos;
+
+            const tbody = document.getElementById('relatorio-tbody');
+            tbody.innerHTML = '';
+            
+            if (vendasFiltradas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Nenhuma venda encontrada para o período selecionado</td></tr>';
+            } else {
+                vendasFiltradas.forEach(venda => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">${formatDate(venda.data)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium">${venda.cliente}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 rounded-full text-xs ${getRotaClass(venda.rota)}">
+                                    ${venda.rota}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right font-medium text-green-600">R$ ${venda.total.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('relatorio-resultado').classList.remove('hidden');
+        }
+
+        function imprimirRelatorio() {
+            window.print();
+        }
+
+        function exportarCSV() {
+            const headers = ['Data', 'Cliente', 'Rota', 'Vendedor', 'Total'];
+            const csvContent = [
+                headers.join(','),
+                ...vendas.map(venda => [
+                    formatDate(venda.data),
+                    `"${venda.cliente}"`,
+                    `"${venda.rota}"`,
+                    `"${venda.vendedor}"`,
+                    venda.total.toFixed(2)
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `relatorio_sdgas_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Event listeners para formulários
+        document.getElementById('venda-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const venda = {
+                id: Date.now(),
+                cliente: document.getElementById('venda-cliente').value,
+                rota: document.getElementById('venda-rota').value,
+                vendedor: document.getElementById('venda-vendedor').value,
+                data: document.getElementById('venda-data').value,
+                qtdGas: parseFloat(document.getElementById('venda-qtd-gas').value) || 0,
+                precoGas: parseFloat(document.getElementById('venda-preco-gas').value) || 0,
+                qtdAgua: parseFloat(document.getElementById('venda-qtd-agua').value) || 0,
+                precoAgua: parseFloat(document.getElementById('venda-preco-agua').value) || 0,
+                observacoes: document.getElementById('venda-observacoes').value,
+                total: parseFloat(document.getElementById('venda-total').textContent)
+            };
+
+            vendas.unshift(venda);
+            fecharModalVenda();
+            atualizarVendas();
+        });
+
+        document.getElementById('rota-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const novaRota = document.getElementById('rota-nome').value;
+            if (novaRota && !rotas.includes(novaRota)) {
+                rotas.push(novaRota);
+                fecharModalRota();
+                atualizarRotas();
+                atualizarFiltros();
+            }
+        });
+
+        document.getElementById('vendedor-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const vendedor = {
+                id: Date.now(),
+                nome: document.getElementById('vendedor-nome').value,
+                telefone: document.getElementById('vendedor-telefone').value,
+                rota: document.getElementById('vendedor-rota').value
+            };
+
+            vendedores.push(vendedor);
+            fecharModalVendedor();
+            atualizarVendedores();
+            atualizarFiltros();
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('pt-BR');
+            setCurrentTab('vendas');
+        });
+    </script>
+</body>
+</html>
